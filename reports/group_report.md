@@ -45,19 +45,20 @@
 
 ## 04 · Baseline vs PoC
 
-- **Baseline (mô tả, phiên bản/config, commit):** `src.t14.baseline`; xuất dự đoán tự động, không review; `conf_threshold=0.25`; Git SHA `0e9e23b`.
-- **PoC (mô tả, phiên bản/config, commit):** `src.pipeline`; lọc/xếp hạng, tạo review queue, hỗ trợ override, QA và quyết định; `conf_threshold=0.25`, `budget=30`; Git SHA `0e9e23b`. Số liệu hiện tại là **trước khi áp dụng quyết định của người gán nhãn**.
-- **Cùng budget / heldout / seed:** Có: cùng gói dữ liệu, split eval, seed 42; PoC có budget review 30 mục, gồm 24 mục hộp và 6 mục kiểm tra ảnh.
+- Baseline theo repo: `src/t14/baseline.py`, chạy auto-label với `conf_threshold` mặc định và không review; file `reports/metrics_baseline.json` ghi `run_name: "baseline"`, `seed: 42`, `git_sha: "0e9e23b"`.
+- PoC theo repo: `src/t14/annotate.py` + `src/t14/review_export.py`, sắp xếp hàng đợi theo `score`, hỗ trợ override, export + QA; `reports/metrics_poc.json` ghi `run_name: "poc"`, `seed: 42`, `git_sha: "b84f491"`.
+- Cùng budget / heldout / seed: `configs/lab.yaml` có `seed: 42`, `budget: 30`, `conf_threshold: 0.10`; `docs/tracks/T14.md` quy định cùng pool / budget / seed cho baseline và PoC.
 
 **Bảng 1 · Baseline vs PoC & hard slices** — dán output của
 `python -m src.compare reports/metrics_baseline.json reports/metrics_poc.json`:
 
 | Metric (unit) | Baseline | PoC | Δ & chú thích |
-|---|---|---|---|
-| Primary: ______ | ____ | ____ | ____; higher/lower? |
-| Hard-slice: ______ | ____ | ____ | ____; N=__ |
-| Review@B / miss / FP | ____ | ____ | ____; B=__ |
-| Runtime / 100 items | ____ | ____ | ____; CPU=__ |
+|---|---:|---:|---|
+| Primary: Detection F1@IoU0.5 | 0.4433 | 0.4263 | -0.0170; lower is worse; N=287 |
+| Precision (TP/(TP+FP)) | 0.8571 | 0.8710 | +0.0138; higher is better |
+| Recall (TP/(TP+FN)) | 0.2990 | 0.2822 | -0.0168; higher is better |
+| Invalid-label rate | 0.0000 | 0.0000 | 0.0000; lower is better |
+| Runtime / 100 items (s) | 0.0500 | 0.0285 | PoC thấp hơn |
 
 ## 05 · Evaluation protocol
 
@@ -79,29 +80,30 @@
 
 ## 07 · Human & decision
 
-- Review queue (file, B, cách ưu tiên): ____
-- Cách override + audit log (`out/audit_log.jsonl`): ____
-- Decision policy + `reason_code` + owner: ____
-- Khi nào HOLD/REWORK thay vì tự động release: ____
+- Review queue: `src/t14/annotate.py` tạo `score` cho từng box và cho image-level “image_check_missing_small”; hàng đợi ưu tiên theo `score` cao hơn. Dữ liệu repo mô tả rõ: “higher = review first” và `box_id` có dạng `img:<image_id>` cho các item mất object nhỏ.
+- Override + audit log: `src/t14/review_export.py` hỗ trợ `approve | reject | edit | escalate | skip`. `edit` có thể thay đổi `class` hoặc `box` và tạo thêm item với `add=...`; lúc này `ctx.audit.log` ghi `before`/`after` và `review_note` vào `audit_log.jsonl`.
+- Decision policy: `decide()` trong `src/t14/review_export.py` dùng `owner = ctx.config.get("owner", "TODO-owner")` và `reason_code` từ các status `INVALID_LABELS`, `REVIEW_PENDING`, `REVIEW_INCOMPLETE`, `QA_PASSED`. Đây là chính sách bị buộc bởi template repo: `reason_code` + `owner` là bắt buộc.
+- Khi nào HOLD/REWORK: nếu có `n_invalid > 0` -> `REWORK`; nếu file review chưa tồn tại hoặc có item pending/escalate -> `HOLD`; nếu review đã hoàn tất và 0 invalid -> `GO`.
 
 ## 08 · Reproduce & tests
 
 ```bash
-make setup          # hoặc: python -m venv .venv && pip install -r requirements.txt
-python -m src.main --input fixtures/<track> --config configs/lab.yaml --output out/ --offline --seed 42
-python -m src.evaluate --track t__ --pred out/<file> --out reports/metrics_poc.json
+make setup
+python -m src.main --config configs/lab.yaml --track t14 --pipeline src.t14.baseline --output out/baseline --run-name baseline --offline --seed 42
+python -m src.main --config configs/lab.yaml --track t14 --output out/poc --run-name poc --offline --seed 42
+python -m src.evaluate --track t14 --pred out/... --run-name ... --out reports/metrics_*.json
 pytest -q
 ```
 
 - Output của `pytest -q`: ____
-- Máy / CPU / OS / Python: ____ · git sha: ____
+- Máy / CPU / OS / Python: `reports/metrics_baseline.json` có `platform: "Windows-11-10.0.26200-SP0"`, `processor: "Intel64 Family 6 Model 141 Stepping 1, GenuineIntel"`, `python: "3.13.7"`; `reports/metrics_poc.json` có `platform: "macOS-26.2-arm64-arm-64bit"`, `processor: "arm"`, `python: "3.11.18"`. 
 
 ## 09 · Limitations & ethics
 
-- Rủi ro pháp lý / PII / license: ____
-- Điều chưa biết; false alarms; nếu scale 10× thì sao: ____
-- Không tuyên bố "đạt GDPR / luật Việt Nam" từ checklist tự động; giả định cần DPO/legal xác nhận: ____
-- Kế hoạch cải tiến: ____
+- Rủi ro pháp lý / PII / license: repo cảnh báo rõ không được đưa dữ liệu người thật/biển số thật lên repo công khai và phải giữ dữ liệu thật trong `data/real/` không commit nếu chứa PII. `docs/tracks/T14.md` ghi rõ “Ultralytics YOLO26 là AGPL-3.0 (hoặc Enterprise)”, nên khi đưa sang môi trường thương mại đóng phải xác nhận license và có kiểm soát sử dụng.
+- Điều chưa biết / false alarm / scaling: object nhỏ và biển báo `sign` là lớp có recall cực thấp; mô hình có thể bỏ sót trong mẫu nhỏ hoặc class không nằm trong taxonomy. Nếu scale 10×, cần thêm review queue, nhóm sampling và QA giảm sai số sử dụng bởi các trường hợp edge.
+- Không tuyên bố “đạt GDPR/luật Việt Nam” từ checklist tự động; mọi giả định về quyền xử lý dữ liệu, đánh nhãn và lưu trữ cần được DPO/legal xác nhận trước khi đưa vào môi trường production.
+- Kế hoạch cải tiến: thu thập thêm mẫu nhỏ, kiểm tra lại mapping class bằng tên thay vì id, tăng review budget cho `sign` và `small_objects`, và thêm kiểm tra QA trước export để chặn invalid label ngay từ đầu.
 
 ## 10 · Team contribution
 
@@ -118,9 +120,16 @@ pytest -q
 
 ## 11 · References
 
-| URL | Ngày xem | 1–2 dòng ý nghĩa (không chép nguyên văn) |
-|---|---|---|
-| | | |
+| File / URL | Mô tả ngắn |
+|---|---|
+| `README.md` | Mô tả repo, contract và quy tắc lab. |
+| `docs/tracks/T14.md` | Đề bài T14, output contract và failure mode bắt buộc. |
+| `src/t14/data.py` | Label map validation và ánh xạ model class sang taxonomy project. |
+| `src/t14/annotate.py` | Tính `score`, ưu tiên review theo sự bất định và object nhỏ. |
+| `src/t14/review_export.py` | Override review, export YOLO/COCO, QA gate, và quyết định GO/HOLD/REWORK. |
+| `reports/metrics_baseline.json` | Kết quả baseline với `seed=42` và metric chính `Detection F1@IoU0.5`. |
+| `reports/metrics_poc.json` | Kết quả PoC với `seed=42` và metric chính `Detection F1@IoU0.5`. |
+| `reports/table1_baseline_vs_poc.md` | Bảng so sánh baseline và PoC do script sinh ra. |
 
 ---
 
