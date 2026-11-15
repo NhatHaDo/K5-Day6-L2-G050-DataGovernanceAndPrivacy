@@ -62,19 +62,19 @@
 ## 05 · Evaluation protocol
 
 - Công thức primary metric, đơn vị đánh giá, TP/FP/FN, denominator: ____ (xem `reports/metric_contract.md`)
-- Threshold / budget B / K và lúc chốt: ____
+- Threshold / budget B / K và lúc chốt: `conf_threshold=0.10`, `budget=30`, `image_budget=6`; chọn ngưỡng 0.10 vì đạt F1 dev cao nhất trong sweep 0.05–0.60 (0.478; tại 0.25 là 0.413), rồi freeze trước eval.
 - Độ bất định (CI/bootstrap/variance) khi N nhỏ: ____
-- Lệnh evaluate chính xác: `python -m src.evaluate --track t__ --pred ... --out ...`
+- Lệnh evaluate chính xác: `.venv/Scripts/python -m src.evaluate --track t14 --pred out/t14_tuned_010/baseline/predictions.csv --run-name baseline --out reports/metrics_baseline.json` và tương tự với `out/t14_tuned_010/poc/predictions.csv --run-name poc --out reports/metrics_poc.json`.
 
 ## 06 · Result slices
 
 | Slice | N | Baseline | PoC | Ghi chú |
 |---|---|---|---|---|
-| | | | | |
-| | | | | |
+| `small_objects (<150 px²)` — Recall | 9 | 0/9 = 0.000 | 0/9 = 0.000 | Baseline và PoC đều bỏ sót cả 9 GT vật thể nhỏ. |
+| `class=sign` — Recall | 71 | 1/71 = 0.014 | 1/71 = 0.014 | Baseline và PoC cùng phát hiện 1/71 GT biển báo; không có cải thiện trên slice này. |
 
-- Failure case 1 (ảnh/metadata + root cause): ____
-- Failure case 2: ____
+- **Failure case 1 — sai mapping class ID:** Prediction có `class_id=0` nghĩa là `person` trong COCO/model label map, nhưng taxonomy dự án dùng ID `0` cho `car`. Nếu lấy ID model làm ID taxonomy, output vẫn có thể hợp lệ về định dạng nhưng gán nhầm người thành xe. Root cause là trộn hai không gian ID; code đúng phải đổi `model class_id -> tên trong model card -> tên taxonomy`. Minh chứng: `src/t14/data.py` (`MODEL_TO_TAXONOMY`), `tools/make_t14_bdd.py` (`BDD_TO_TAXONOMY`) và test `test_label_map_goes_through_names_not_ids`.
+- **Failure case 2 — confidence cao nhưng bỏ sót vật thể nhỏ:** Trên eval ảnh `bdd_18`, GT có hai biển báo nhỏ với diện tích 112.13 và 124.55 px²; cả hai không được match. Cùng ảnh, prediction `car` có confidence 0.900 và IoU 0.969 với một GT car lớn. Toàn eval có 9 GT box nhỏ dưới 150 px², recall 0/9; lớp `sign` có recall 1/71 (0.014), không phải 0 trong lần chạy hiện tại. Root cause phù hợp với model card: COCO model chỉ có lớp `stop sign`, trong khi nhãn BDD `traffic sign` bao gồm nhiều loại biển báo khác. Cần human review theo ảnh để tìm các object bị bỏ sót; không dùng eval để tune threshold.
 - Latency / compute (máy, CPU, ms/item): ____
 
 ## 07 · Human & decision
