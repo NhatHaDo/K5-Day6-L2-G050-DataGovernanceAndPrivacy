@@ -1,16 +1,16 @@
 {
   "run_name": "baseline",
   "track": "t14",
-  "created_at": "2026-11-14T16:01:29+00:00",
-  "git_sha": "b0ce8bf",
+  "created_at": "2026-11-15T04:17:59+00:00",
+  "git_sha": "0e9e23b",
   "seed": 42,
-  "n_items": 288,
-  "runtime_seconds": 0.1439,
-  "runtime_per_100_items_s": 0.05,
+  "n_items": 540,
+  "runtime_seconds": 0.1031,
+  "runtime_per_100_items_s": 0.0191,
   "machine": {
-    "python": "3.15.2",
+    "python": "3.13.7",
     "platform": "Windows-11-10.0.26200-SP0",
-    "processor": "AMD64 Family 25 Model 116 Stepping 1, AuthenticAMD"
+    "processor": "Intel64 Family 6 Model 141 Stepping 1, GenuineIntel"
   },
   "config": {
     "iou": 0.5,
@@ -19,12 +19,12 @@
   "metrics": [
     {
       "name": "Detection F1@IoU0.5",
-      "value": 0.4433497536945813,
+      "value": 0.43805309734513276,
       "direction": "higher",
       "unit": "class-aware greedy match",
       "numerator": null,
       "denominator": null,
-      "n": 301,
+      "n": 287,
       "slice": "all",
       "primary": true,
       "notes": "",
@@ -32,11 +32,11 @@
     },
     {
       "name": "Precision",
-      "value": 0.8571428571428571,
+      "value": 0.6,
       "direction": "higher",
       "unit": "TP/(TP+FP)",
-      "numerator": 90,
-      "denominator": 105,
+      "numerator": 99,
+      "denominator": 165,
       "n": null,
       "slice": "all",
       "primary": false,
@@ -45,11 +45,11 @@
     },
     {
       "name": "Recall",
-      "value": 0.29900332225913623,
+      "value": 0.34494773519163763,
       "direction": "higher",
       "unit": "TP/(TP+FN)",
-      "numerator": 90,
-      "denominator": 301,
+      "numerator": 99,
+      "denominator": 287,
       "n": null,
       "slice": "all",
       "primary": false,
@@ -62,7 +62,7 @@
       "direction": "lower",
       "unit": "exported boxes with unknown class or out-of-bounds / exported boxes",
       "numerator": 0,
-      "denominator": 105,
+      "denominator": 165,
       "n": null,
       "slice": "all",
       "primary": false,
@@ -72,15 +72,15 @@
   ],
   "extra": {
     "gt": "data\\real\\t14_bdd\\gt\\gt_boxes.csv",
-    "pred": "out\\baseline\\predictions.csv",
+    "pred": "out\\t14_tuned_010\\baseline\\predictions.csv",
     "notes": [],
     "slices": [
       {
         "slice": "class=car",
-        "n": 190,
-        "recall": 0.37894736842105264,
-        "precision": 0.8470588235294118,
-        "f1": 0.5236363636363637
+        "n": 160,
+        "recall": 0.45625,
+        "precision": 0.584,
+        "f1": 0.512280701754386
       },
       {
         "slice": "class=motorbike",
@@ -91,21 +91,21 @@
       },
       {
         "slice": "class=pedestrian",
-        "n": 52,
-        "recall": 0.34615384615384615,
-        "precision": 0.9,
-        "f1": 0.5
+        "n": 55,
+        "recall": 0.45454545454545453,
+        "precision": 0.6410256410256411,
+        "f1": 0.5319148936170213
       },
       {
         "slice": "class=sign",
-        "n": 58,
-        "recall": 0.0,
-        "precision": NaN,
-        "f1": 0.0
+        "n": 71,
+        "recall": 0.014084507042253521,
+        "precision": 1.0,
+        "f1": 0.02777777777777778
       },
       {
         "slice": "small_objects(<150px²)",
-        "n": 8,
+        "n": 9,
         "recall": 0.0,
         "precision": NaN,
         "f1": NaN

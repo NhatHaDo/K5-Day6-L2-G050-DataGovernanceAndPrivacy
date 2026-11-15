@@ -2,8 +2,8 @@
 # Group config — EDIT ME (one per group). Values here override
 # the track defaults loaded from `track_config`.
 # ============================================================
-group_id: G00                     # TODO nhóm: điền số nhóm, e.g. G07
-owner: "TODO: tên người ký duyệt (QA Lead)"   # mandatory for every Decision
+group_id: G050
+owner: "Oanh"                       # QA Lead signing each Decision
 track_config: tracks/t14.yaml
 track: t14                        # must match track_config
 input: data/real/t14_bdd          # real BDD100K (Kaggle) pack; build it with: python -m tools.make_t14_bdd
@@ -14,5 +14,5 @@ strict_provenance: true           # fail if manifest.csv hashes do not match
 
 # Track params (merged over track_config.params). Frozen before evaluation.
 params:
-  conf_threshold: 0.25
+  conf_threshold: 0.10
   budget: 30
