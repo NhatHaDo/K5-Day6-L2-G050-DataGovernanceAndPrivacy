@@ -8,46 +8,46 @@
 
 | Mục | Giá trị |
 |---|---|
-| Group ID | G__ |
-| Challenge | T__ · ______________________ |
+| Group ID | G050 |
+| Challenge | T14 · Auto-Annotation + Human QC Exporter |
 | Thành viên (5–6) + vai trò | 1. ____ (Lead/Integrator) · 2. ____ (Data & fixtures) · 3. ____ (Core algorithm) · 4. ____ (QA/metric) · 5. ____ (Review + report) · 6. ____ |
-| Git URL | ____ |
+| Git URL | [____](https://github.com/NhatHaDo/K5-Day6-L2-G050-DataGovernanceAndPrivacy/tree/main) |
 | Tag `demo-180m` (commit) | ____ |
 | Tag `final-24h` (commit) | ____ |
-| Deadline (giờ VN) | ____ |
+| Deadline (giờ VN) | 12:00 PM 15/11/2026 |
 
 ## 01 · Problem statement
 
-- Ai bị ảnh hưởng / ai chịu hậu quả khi hệ thống sai? ____
-- Điểm nghẽn cụ thể: ____
-- Đầu vào → đầu ra: ____
-- Tiêu chí GO / HOLD / REWORK (chốt trước khi chạy eval): ____
-- Giả định của nhóm (cần DPO/legal/domain owner xác nhận): ____
+- Ai bị ảnh hưởng / ai chịu hậu quả khi hệ thống sai? Người gán nhãn dữ liệu và các nhóm sử dụng nhãn đã xuất. Nhãn sai có thể làm giảm chất lượng dữ liệu dùng ở các bước sau.
+- Điểm nghẽn cụ thể: Gán hộp và lớp thủ công tốn công; dự đoán tự động có thể gán sai lớp, sai hộp hoặc bỏ sót vật thể.
+- Đầu vào → đầu ra: Ảnh BDD100K và dự đoán của mô hình → lọc confidence, xếp hạng mục cần kiểm tra → quyết định của người gán nhãn → nhãn hợp lệ dạng `predictions.csv`, YOLO và COCO.
+- Tiêu chí GO / HOLD / REWORK (chốt trước khi chạy eval): `GO` khi mọi mục trong hàng đợi được duyệt, không còn mục chưa xử lý/được chuyển cấp và QA không phát hiện nhãn không hợp lệ; `HOLD` khi review còn thiếu/chưa hoàn tất/được chuyển cấp; `REWORK` khi QA phát hiện nhãn không hợp lệ.
+- Giả định của nhóm (cần DPO/legal/domain owner xác nhận): Người gán nhãn xem ảnh và hộp dự đoán, không xem ground truth khi ra quyết định. Quy trình này không thay thế xác nhận của DPO, pháp chế hoặc chủ sở hữu dữ liệu.
 
 ## 02 · Data & provenance
 
-| Split | N | Nguồn / link | License | Synthetic? |
-|---|---|---|---|---|
-| dev | | | | |
-| eval / heldout | | | | |
+| Split | N (ảnh) | Nguồn / link | License | Synthetic? |
+|---|---:|---|---|---|
+| dev | 40 | Kaggle `a7madmostafa/bdd100k-yolo` | BDD100K: nghiên cứu/giáo dục phi thương mại theo hướng dẫn dự án | Không |
+| eval / heldout | 20 | Cùng bộ dữ liệu Kaggle; được tách bởi tool dựng gói | BDD100K: nghiên cứu/giáo dục phi thương mại theo hướng dẫn dự án | Không |
 
-- Schema & class mapping: ____
-- Seed: 42 · Cách chia split (theo scene/group/segment?): ____
-- `manifest.csv` verified (sha256): có / không — lệnh: `python -m tools.verify_manifests`
-- Dữ liệu thật dùng (nếu có) và cách xây GT cho nó: ____
+- **Schema & class mapping:** Hộp có `image_id, class, x, y, w, h` theo pixel. Taxonomy gồm `car`, `pedestrian`, `motorbike`, `sign`. Nhãn BDD `person` và `rider` → `pedestrian`; `car` → `car`; `motor` → `motorbike`; `traffic sign` → `sign`; các lớp BDD còn lại bị loại. Dự đoán model được map theo tên lớp: COCO `person` → `pedestrian`, `car` → `car`, `motorcycle` → `motorbike`, `stop sign` → `sign`.
+- **Seed / chia split:** seed 42; tool chọn 60 ảnh từ danh sách tên file đã sắp xếp, sau đó chia 40 ảnh dev và 20 ảnh eval. Nếu danh sách ảnh nguồn khác, tập ảnh và số liệu có thể khác.
+- **`manifest.csv` verified (sha256):** Có qua kiểm tra trong lúc chạy pipeline; `strict_provenance: true` và hai lệnh pipeline đã hoàn tất với status 0. Chưa ghi nhận lần chạy riêng `python -m tools.verify_manifests`.
+- **Dữ liệu thật và cách xây GT:** Ảnh và nhãn YOLO lấy từ Kaggle `a7madmostafa/bdd100k-yolo`; tool chuyển nhãn sang taxonomy dự án và lưu tại `data/real/t14_bdd/gt/gt_boxes.csv`. Đây là GT từ nhãn Kaggle, **không phải** hidden GT của giảng viên.
 
 ## 03 · Research & design
 
 - 2–3 references (URL + ngày xem) và **vì sao** chọn kỹ thuật: ____
-- Sơ đồ data flow (input → process → rank/QC → review → decision → report): ____
-- Thành phần offline (model/weights + checksum + license nếu có): ____
-- Trade-offs đã cân nhắc: ____
+- Sơ đồ data flow (input → process → rank/QC → review → decision → report): Ảnh/dự đoán → kiểm manifest và ánh xạ tên lớp → lọc confidence/xếp hạng rủi ro → hàng đợi review → áp quyết định và ghi audit → xuất YOLO/COCO + QA → quyết định GO/HOLD/REWORK.
+- Thành phần offline (model/weights + checksum + license nếu có): Ultralytics YOLO26n, chạy CPU; model card ghi SHA-256 `9b09cc8bf347f0fc8a5f7657480587f25db09b34bf33b0652110fb03a8ad4fef`, license AGPL-3.0 (hoặc Enterprise cho một số trường hợp sử dụng thương mại đóng). Khi dựng gói, inference dùng confidence `0.05`; pipeline lọc tiếp theo ngưỡng `0.25`.
+- Trade-offs đã cân nhắc: Chạy offline/CPU giúp không cần gọi mạng trong lúc chạy, nhưng không khắc phục được khác biệt taxonomy và miền dữ liệu. Model chỉ có `stop sign` trong các lớp COCO được giữ lại, trong khi BDD có lớp `traffic sign` rộng hơn; vì vậy model có thể bỏ sót nhiều biển báo BDD.
 
 ## 04 · Baseline vs PoC
 
-- Baseline (mô tả, version/config, commit): ____
-- PoC (mô tả, version/config, commit): ____
-- Cùng budget / cùng heldout / cùng seed: xác nhận ____
+- **Baseline (mô tả, phiên bản/config, commit):** `src.t14.baseline`; xuất dự đoán tự động, không review; `conf_threshold=0.25`; Git SHA `0e9e23b`.
+- **PoC (mô tả, phiên bản/config, commit):** `src.pipeline`; lọc/xếp hạng, tạo review queue, hỗ trợ override, QA và quyết định; `conf_threshold=0.25`, `budget=30`; Git SHA `0e9e23b`. Số liệu hiện tại là **trước khi áp dụng quyết định của người gán nhãn**.
+- **Cùng budget / heldout / seed:** Có: cùng gói dữ liệu, split eval, seed 42; PoC có budget review 30 mục, gồm 24 mục hộp và 6 mục kiểm tra ảnh.
 
 **Bảng 1 · Baseline vs PoC & hard slices** — dán output của
 `python -m src.compare reports/metrics_baseline.json reports/metrics_poc.json`:
