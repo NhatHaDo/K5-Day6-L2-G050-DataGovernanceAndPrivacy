@@ -75,6 +75,8 @@ def test_gt_guard_blocks_ground_truth_reads():
     try:
         with pytest.raises(GroundTruthAccessError):
             pd.read_csv("fixtures/t02_raw_qc/gt/labels.csv")
+        with pytest.raises(GroundTruthAccessError):           # real packs are guarded too
+            pd.read_csv("data/real/t14_bdd/gt/gt_boxes.csv")
         pd.read_csv("fixtures/t02_raw_qc/images.csv")   # inputs are fine
     finally:
         disable_gt_guard()

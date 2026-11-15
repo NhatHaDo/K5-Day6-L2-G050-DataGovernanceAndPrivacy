@@ -1,0 +1,2 @@
+# Fixtures are hashed in manifest.csv (sha256): never convert line endings, or provenance checks fail on Windows
+fixtures/** -text

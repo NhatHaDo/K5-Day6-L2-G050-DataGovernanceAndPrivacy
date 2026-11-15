@@ -32,3 +32,8 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+# Real images / downloaded weights (real people & plates; AGPL weights) — never commit
+data/images/
+models_optional/
+data/labels/

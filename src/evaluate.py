@@ -39,7 +39,10 @@ def main(argv=None) -> int:
         print("--track is required (or set `track:` in configs/lab.yaml)", file=sys.stderr)
         return 2
     spec = get_track(track)
-    gt = Path(a.gt) if a.gt else default_gt_path(spec.track)
+    # Default GT follows the configured input pack (e.g. data/real/t14_bdd/gt/...), else the track fixture.
+    own = str(cfg.get("track", "")).lower()[:3] == spec.track and cfg.get("input")
+    pack_gt = Path(cfg["input"]) / spec.default_gt if own else None
+    gt = Path(a.gt) if a.gt else pack_gt if pack_gt and pack_gt.exists() else default_gt_path(spec.track)
     pred = Path(a.pred)
     if not gt.exists():
         print(f"ground truth file not found: {gt}\n"

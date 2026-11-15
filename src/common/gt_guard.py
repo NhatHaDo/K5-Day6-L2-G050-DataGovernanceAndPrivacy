@@ -29,7 +29,8 @@ def _is_gt(path) -> bool:
     except TypeError:
         return False
     parts = p.parts
-    return "gt" in parts and "fixtures" in parts and parts.index("gt") > parts.index("fixtures")
+    # `data` covers real packs (data/real/<pack>/gt), same layout as fixtures
+    return "gt" in parts and any(r in parts and parts.index("gt") > parts.index(r) for r in ("fixtures", "data"))
 
 
 def _guarded_open(file, *args, **kwargs):  # type: ignore[no-untyped-def]
